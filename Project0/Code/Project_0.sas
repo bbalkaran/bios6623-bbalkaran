@@ -46,19 +46,19 @@ attachment loss at one year.;
 **********************************************************;
 *Import data*;
 PROC IMPORT DATAFILE ='/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data Analysis/Project_0/Project0_dental_data.csv' 
-	OUT = Project0Raw 
-	DBMS=CSV
+	OUT = Project0Raw; 
+	DBMS=CSV;
 	REPLACE;
 	RUN;
 	
 *Print data set for viewing*;
-PROC PRINT DATA = Project0Raw;      
-	TITLE 'Project 0 Dental Data Raw';
-	RUN;
+*PROC PRINT DATA = Project0Raw;      
+	*TITLE 'Project 0 Dental Data Raw';
+	*RUN;
 
 *look at metadata*;
-PROC CONTENTS DATA=Project0Raw;
-	RUN;
+*PROC CONTENTS DATA=Project0Raw;
+*	RUN;
 	*attach1year and pd1year are imported as characters. Need to change to numeric.;
 
 *Change NAs to " ", then print to view*;
@@ -69,8 +69,8 @@ DATA Project0Clean;
 	RUN;
 
 *Confirm NAs removed;
-PROC PRINT DATA=Project0Clean;
-	RUN;
+*PROC PRINT DATA=Project0Clean;
+*	RUN;
 
 *Data types still need to be changed from character to numeric; 
 *PROC CONTENTS DATA=Project0Clean;
@@ -91,11 +91,11 @@ DATA Project0Clean1;
 	attachdiff = attach1yearNum - attachbase;
 	pddiff = pd1yearNum - pdbase;
 	RUN;
-PROC PRINT DATA=Project0Clean1;
-	Title "Project 0 Dental Data Cleaned";
-	RUN;
-PROC CONTENTS DATA=Project0Clean1;
-	RUN;
+*PROC PRINT DATA=Project0Clean1;
+*	Title "Project 0 Dental Data Cleaned";
+*	RUN;
+*PROC CONTENTS DATA=Project0Clean1;
+*	RUN;
 
 *Data cleaned. Dummy code variables;
 DATA Project0Clean2;
@@ -131,14 +131,9 @@ PROC FREQ Data=Project0Clean2;
 TABLES trtgroup sex race smoker /nocum;
 	RUN;
 
-
-
-
-
-
 *Summary Statistics*;
-PROC MEANS DATA=Project0Clean2 N MEAN VAR STD;
-	VAR attachdiff pddiff trtgroup age ;
+PROC MEANS DATA=Project0Clean2 N MEAN VAR STD NMISS MIN MAX;
+	VAR  attachbase attachdiff pdbase pddiff age;
 	RUN;	
 PROC REG DATA=Project0Clean2;
 	model attachdiff = trtgroup;
@@ -149,7 +144,52 @@ PROC REG DATA=Project0Clean2;
 	title "Model of Pocket Depth Difference and Treatment Group";
 	RUN;title;
 
+*Boxplots - attachdiff;
+/*--Set output size--*/
+ods graphics / reset imagemap;
 
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT0CLEAN2;
+	/*--TITLE and FOOTNOTE--*/
+	title "Attachment Loss Differences by Treatment Group";
+
+	/*--Box Plot settings--*/
+	vbox attachdiff / category=trtgroup fillattrs=(color=CX5dadd3) boxwidth=0.7 
+		name='Box';
+
+	/*--Category Axis--*/
+	xaxis fitpolicy=splitrotate label="Treatment Group";
+
+	/*--Response Axis--*/
+	yaxis label="Attachment Loss Difference" grid;
+run;
+
+
+ods graphics / reset;
+title;
+
+*Boxplot - pddiff;
+/*--Set output size--*/
+ods graphics / reset imagemap;
+
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT0CLEAN2;
+	/*--TITLE and FOOTNOTE--*/
+	title "Pocket Depth Differences by Treatment Group";
+
+	/*--Box Plot settings--*/
+	vbox pddiff / category=trtgroup fillattrs=(color=CX905dd3) boxwidth=0.7 
+		name='Box';
+
+	/*--Category Axis--*/
+	xaxis fitpolicy=splitrotate label="Treatment Group";
+
+	/*--Response Axis--*/
+	yaxis label="Pocket Depth Difference" grid;
+run;
+
+ods graphics / reset;
+title;
 
 
 
@@ -158,11 +198,26 @@ PROC REG DATA= Project0Clean2;
 	MODEL attachdiff = placeboBlankGel low medium high; 
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base";
 	RUN;
+	*Include attachbase in model. Increases significance, adjR^2, decreaeses MSE;
+PROC REG DATA= Project0Clean2;
+	MODEL attachdiff = placeboBlankGel low medium high attachbase; 
+	Title"Model of Difference in Attachment from Year 1 Follow Up and Base";
+	RUN;
 PROC REG DATA= Project0Clean2;
 	MODEL pddiff = placeboBlankGel low medium high; 
 	Title"Model of Difference in Pocket Depth from Year 1 Follow Up and Base";
+	RUN;	
+	*Include pdbase in base model. Makes overall model significant.; 
+PROC REG DATA= Project0Clean2;
+	MODEL pddiff = placeboBlankGel low medium high pdbase; 
+	Title"Model of Difference in Pocket Depth from Year 1 Follow Up and Base";
 	RUN;
 	
+PROC CORR DATA=WORK.PROJECT0CLEAN2 pearson nosimple plots=none;
+	var trtgroup sex race age smoker sites attachbase pdbase attach1yearNum 
+		pd1yearNum attachdiff pddiff notreatment placeboBlankGel low medium high male 
+		female NativeAmerican AfricanAmerican Asian white;
+	RUN;
 	
 	
 	
@@ -170,38 +225,48 @@ PROC REG DATA= Project0Clean2;
 	
 *Full models*;
 PROC REG DATA= Project0Clean2;
-	MODEL attachdiff = placeboBlankGel low medium high sex age race smoker; 
+	MODEL attachdiff = placeboBlankGel low medium high attachbase sex age race smoker; 
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Full Model";
 	RUN;
 PROC REG DATA= Project0Clean2;
-	MODEL pddiff = placeboBlankGel low medium high sex age race smoker; 
+	MODEL pddiff = placeboBlankGel low medium high pdbase sex age race smoker; 
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Full Model";
 	RUN;
 	
 	
 	
 	
+		
 *model selection using partial F tests for Attachdiff*;
 PROC REG DATA= Project0Clean2;
-	MODEL attachdiff = placeboBlankGel low medium high sex age race smoker; *Ho:B_smoker=0;
+	MODEL attachdiff = placeboBlankGel low medium high attachbase sex age race smoker; *Ho:B_sex=0;
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
-		TestSmoker: TEST smoker=0; *p=0.5138 cannot reject Ho:B_smoker=0, drop smoker from model;
+		TestSex: TEST sex=0; *p=0.4896 cannot reject Ho:B_sex=0, drop sex from model;
 		RUN;	
 
 PROC REG DATA= Project0Clean2;
-	MODEL attachdiff = placeboBlankGel low medium high sex age race; *Ho:B_race=0; 
+	MODEL attachdiff = placeboBlankGel low medium high attachbase age race smoker; *Ho:B_age=0; 
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
-		TestRace: TEST race=0; *p=0.3193 cannot reject Ho:B_race=0 drop race from model;
+		TestAge: TEST age=0; *p=0.2632 cannot reject Ho:B_age=0 drop age from model;
 	RUN;
+
 PROC REG DATA= Project0Clean2;
-	MODEL attachdiff = placeboBlankGel low medium high sex age; *Ho:B_sex=0;
+	MODEL attachdiff = placeboBlankGel low medium high attachbase race smoker;run; *Ho:B_race=0;
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
-		TestSex: TEST sex=0; *p=0.1296 cannot reject Ho:B_age=0 drop age from model;
-	RUN;	
+		TestRace: TEST race=0; *p=0.3402 cannot reject Ho:B_race=0 drop race from model;
+	RUN;
+
 PROC REG DATA= Project0Clean2;
-	MODEL attachdiff = placeboBlankGel low medium high age;
+	MODEL attachdiff = placeboBlankGel low medium high attachbase smoker;*Ho:B_smoker=0;
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
-	RUN; *overall F statistic no longer significant and adjusted R^2 decreases. Leave sex and age in model.*;*/
+	TestSmoker: TEST smoker=0; *p=0.0525, overall F test more significant but Partial F marginally significant. MSE increases, SE increases, adj R^2 decreases when dropping smoker;
+		*leave smoker in model as precision variable;
+	RUN; 
+	
+PROC REG DATA= Project0Clean2;
+	MODEL attachdiff = placeboBlankGel low medium high attachbase;
+	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
+	RUN;
 
 
 
@@ -212,39 +277,63 @@ PROC REG DATA= Project0Clean2;
 
 *model selection using partial F tests for pddiff;
 PROC REG DATA= Project0Clean2;
-	MODEL pddiff= placeboBlankGel low medium high sex age race smoker; *Ho:B_smoker=0;
+	MODEL pddiff= placeboBlankGel low medium high pdbase sex age race smoker; *Ho:B_smoker=0;
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
-		TestSmoker: TEST smoker=0; *p=0.1096 cannot reject Ho:B_smoker=0, drop smoker from model;
+		TestSmoker: TEST smoker=0; *p=0.8118 cannot reject Ho:B_smoker=0, drop smoker from model;
 		RUN;	
 
 PROC REG DATA= Project0Clean2;
-	MODEL pddiff = placeboBlankGel low medium high sex age race; *Ho:B_race=0; 
+	MODEL pddiff = placeboBlankGel low medium high pdbase sex age race; *Ho:B_race=0; 
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
-		TestRace: TEST race=0; *p=0.4175 cannot reject Ho:B_race=0 drop race from model;
+		TestRace: TEST race=0; *p=0.3202 cannot reject Ho:B_race=0 drop race from model;
 	RUN;
 PROC REG DATA= Project0Clean2;
-	MODEL pddiff = placeboBlankGel low medium high sex age; *Ho:B_sex=0;
+	MODEL pddiff = placeboBlankGel low medium high pdbase sex age; *Ho:B_age=0;
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
-		TestAge: TEST age=0; *p=0.3801 cannot reject Ho:B_age=0 drop age from model;
+		TestAge: TEST age=0; *p=0.2900 cannot reject Ho:B_age=0 drop age from model;
 	RUN;	
 PROC REG DATA= Project0Clean2;
-	MODEL pddiff = placeboBlankGel low medium high sex; *Ho:B_sex=0;
+	MODEL pddiff = placeboBlankGel low medium high pdbase sex; *Ho:B_sex=0;
 	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
-		TestSex: TEST sex=0; *p=0.0410 reject Ho:B_sex=0  keep age in model;
+		TestSex: TEST sex=0; *p=0.1111 reject Ho:B_sex=0  drop sex from model;
 	RUN;
+
+PROC REG DATA= Project0Clean2;
+	MODEL pddiff = placeboBlankGel low medium high pdbase; 
+	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates - Partial F test";
+	RUN;
+
 
 
 ***FINAL MODEL ATTACHFDIFF***;
 PROC REG DATA= Project0Clean2;
-	MODEL pddiff = placeboBlankGel low medium high sex age;
-	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariates Sex and Age";
+	MODEL attachdiff = placeboBlankGel low medium high attachbase smoker / clb;
+	Title"Model of Difference in Attachment from Year 1 Follow Up and Base";
 	RUN;
+	
 
 	
 ***FINAL MODEL PDDIFF***;
 PROC REG DATA= Project0Clean2;
-	MODEL pddiff = placeboBlankGel low medium high sex;
-	Title"Model of Difference in Attachment from Year 1 Follow Up and Base with Covariate Age";
+	MODEL pddiff = placeboBlankGel low medium high pdbase/clb;
+	Title"Model of Difference in Attachment from Year 1 Follow Up and Base";
 	RUN;
 
-	
+*Look at differences between low and med;
+*PROC REG DATA=Project0Clean2;
+*model attachdiff = placeboBlankGel low medium high attachbase;
+*TEST low = medium;
+*Run;
+
+
+Title;
+ods noproctitle;
+ods graphics / imagemap=on;
+
+proc glm data=WORK.PROJECT0CLEAN2;
+	class trtgroup;
+	model attachdiff=trtgroup/ clm;
+	means trtgroup / hovtest=levene welch plots=none;
+	lsmeans trtgroup / adjust=tukey pdiff alpha=.05;
+	run;
+quit;
