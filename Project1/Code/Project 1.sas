@@ -24,7 +24,7 @@ PROC IMPORT
 
 /*remove Nas*/
 DATA Project1Raw;
-	SET hivdata;
+	SET Project1.hivdata;
 	IF HASHV ='NA' THEN HASHV= '';
 	IF BMI ='NA' THEN BMI= '';
 	IF TCHOL ='NA' THEN TCHOL= '';
@@ -52,8 +52,6 @@ DATA Project1Clean;
 		DROP LEU3N;	
 	 VLOADnum = INPUT (VLOAD, best12.);
 		DROP VLOAD;	
-	ADHnum = INPUT (ADH, best.12);
-		DROP ADH;	
 	RUN;
 
 /*rename to original labels*/
@@ -65,9 +63,318 @@ DATA Project1Clean2;
 	 TRIGnum=TRIG
 	 LDLnum=LDL
 	 LEU3Nnum=LEU3N
-	 VLOADnum= VLOAD
-	 ADHnum=ADH; 
+	 VLOADnum= VLOAD;
 	RUN;
 	
-		
 
+/*Baseline value of the outcome
+Baseline age 
+Baseline BMI 
+Race - NHW vs. Other
+Baseline marijuana use
+Baseline alcohol use - > 13 drinks per week vs. 13 or less
+Baseline smoking - Current smokers vs. never/former
+Baseline income level - < $10,000, $10,000 - $40,000, >$40,000
+Education - >HS vs. HS or less
+ART Adherence, >95% vs. <95%*/
+
+
+
+/*create year 0 subset data*/	
+DATA Project1SubsetYear0;
+	SET Project1Clean2;
+	If Years =0;
+	 YEARS_0 = YEARS;
+	 HARD_DRUGS_0 = HARD_DRUGS;
+	 VLOAD_0 = VLOAD;
+	 LEU3N_0 = LEU3N;
+	 AGG_PHYS_0 = AGG_PHYS;
+	 AGG_MENT_0 = AGG_MENT;
+	 SMOKE_0 = SMOKE;
+	 AGE_0 = age;
+	 BMI_0 = BMI;
+	 RACE_0 = RACE;
+	 HASHV_0 = HASHV;
+	 DKGRP_0 = DKGRP;
+	 INCOME_0 = INCOME;
+	 EDUCBAS_0 = EDUCBAS;
+	DROP VLOAD LEU3N AGG_PHYS AGG_MENT SMOKE AGE BMI RACE HASHV DKGRP 
+	INCOME EDUCBAS YEARS HARD_DRUGS HASHF HBP DIAB LIV34 KID FRP FP
+	DYSLIP CESD HEROPIATE IDU HIVPOS ART EVERART TCHOL TRIG LDL ADH;
+	RUN;
+
+
+/*create year 2 subset data*/
+DATA Project1SubsetYear2;
+	SET Project1Clean2;
+	If Years = 2;
+	YEARS_2 = YEARS;
+    VLOAD_2 = VLOAD;
+    LEU3N_2 = LEU3N;
+    AGG_PHYS_2  = AGG_PHYS;
+    AGG_MENT_2 = AGG_MENT;
+    ADH_2 = ADH;
+	DROP VLOAD LEU3N AGG_PHYS AGG_MENT YEARS SMOKE AGE 
+	BMI RACE HASHV DKGRP INCOME EDUCBAS HARD_DRUGS
+	HASHF HBP DIAB LIV34 KID FRP FP DYSLIP CESD 
+	HEROPIATE IDU HIVPOS ART EVERART TCHOL TRIG LDL ADH;   
+	RUN; 
+
+
+
+/*sort by id*/	
+PROC SORT  DATA=Project1SubsetYear0;
+	BY newid;
+	RUN;
+
+
+
+/*sort by id*/
+PROC SORT DATA=Project1SubsetYear2;
+	BY newid;
+	RUN;
+
+
+
+/*merge year 0 subset and year 2 subset*/
+DATA Project1_Years0and2;
+	MERGE Project1SubsetYear0 Project1SubsetYear2;
+	BY newid;
+	RUN;
+
+
+/*Create difference variables*/	
+DATA Project1_Years0and2_1;
+	SET Project1_Years0and2;
+	VLOADdiff = VLOAD_2 - VLOAD_0;
+	LEU3Ndiff = LEU3N_2 - LEU3N_0;
+	AGG_MENTdiff = AGG_MENT_2 - AGG_MENT_0;
+	AGG_PHYSdiff = AGG_PHYS_2 - AGG_PHYS_0;
+	RUN;
+	
+	/*IF RACE_0 = 1 Then Race_0 = 0; IF RACE_0 = 2 or 3 or 4 or 5 or 6 or 7 or 8 THEN RACE_0  = 1;
+	IF HASHV_0 = 2 THEN HASHV_0 = 1; IF HASHV_0 = 1 THEN HASHV_0 = 0;
+	IF DKGRP_0  = 3 THEN DKGRP_0 = 1; IF DKGRP_0 = 0 or 1 or 2 THEN DKGRP_0 = 0; 
+	IF SMOKE_0 = 3 THEN SMOKE_0 = 1; IF SMOKE_0 = 1 or 2 THEN SMOKE_0 = 0; 
+	IF EDUCBAS_0 = 1 or 2 or 3 THEN EDUCBAS_0 = 0; IF EDUCBAS_0 = 4 or 5 or 6 or 7 THEN EDUCBA_0 = 1;
+	IF ADH_2 = 3 or 4 THEN ADH_2 = 0; IF ADH_2  = 1 or 2 THEN ADH_0 = 1; 
+	IF INCOME_0 = 1 THEN INCOME_0 = 0; IF INCOME_0 = 2 or 3 or 4 THEN INCOME_0 = 1; IF INCOME_0 = 5 or 6 or 7 THEN INCOME_0 = 2;
+*/
+/*Summarize Data - 9/20/17 */
+PROC FREQ Data=Project1_Years0and2_1;
+TABLES hard_drugs_0 race_0 income_0 educbas_0 adh_2  /nocum;
+	RUN;		
+PROC MEANS DATA=Project1_Years0and2_1 N MEAN VAR STD NMISS MIN MAX;
+	VAR  VLOADdiff LEU3Ndiff AGG_PHYSdiff AGG_MENTdiff AGE_0 BMI_0;
+	RUN;
+	
+**********************************************************************************************;
+/*histogram of VLOADdiff*/
+ods graphics / reset imagemap;
+
+/*--TITLE and FOOTNOTE--*/
+title "Distribution of Viral Load Difference from Year 0 to Year 2";
+
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--Histogram settings--*/
+	histogram VLOADdiff / scale=COUNT fillattrs=(color=CXc50d23);
+
+	/*--Horizontal Axis--*/
+	xaxis label="Difference in Viral Load";
+
+	/*--Vertical or Response Axis--*/
+	yaxis grid;
+run;	
+title;	
+
+********************************************************************************************;
+/* histogram of LEU3Ndiff*/
+title "Distribution of CD4+ T Cell Difference, Year 2 - Year 0";
+
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--Histogram settings--*/
+	histogram LEU3Ndiff / scale=COUNT fillattrs=(color=CXfcfc20);
+
+	/*--Horizontal Axis--*/
+	xaxis label="Difference in CD4+ T Cells";
+
+	/*--Vertical or Response Axis--*/
+	yaxis grid;
+run;
+title;
+
+*********************************************************************************************;
+/*histogram of AGG_MENTdiff*/
+title "Distribution of Aggregate Mental Quality of Life Score Difference, Year 2 - Year 0";
+
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--Histogram settings--*/
+	histogram AGG_MENTdiff / scale=COUNT fillattrs=(color=CX20fc4c);
+
+	/*--Horizontal Axis--*/
+	xaxis label="Difference in Aggregate Mental Quality of Life Score";
+
+	/*--Vertical or Response Axis--*/
+	yaxis grid;
+run;
+title;
+
+**********************************************************************************************;
+/*histogram of AGG_PHYSdiff*/
+/*--TITLE and FOOTNOTE--*/
+title "Distribution of Aggregate Physical Quality of Life Score Difference, Year 2 - Year 0";
+
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--Histogram settings--*/
+	histogram AGG_MENTdiff / scale=COUNT fillattrs=(color=CX2720fc);
+
+	/*--Horizontal Axis--*/
+	xaxis label="Difference in Aggregate Physical Quality of Life Score";
+
+	/*--Vertical or Response Axis--*/
+	yaxis grid;
+run;
+title;
+
+***********************************************************************************************;
+/*scatterplot of Viral load vs age*/
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--TITLE and FOOTNOTE--*/
+	title "Age at Year 0 and Viral Load Difference";
+
+	/*--Scatter plot settings--*/
+	scatter x=AGE_0 y=VLOADdiff / markerattrs=(symbol=Circle) transparency=0.0 
+		name='Scatter';
+
+	/*--X Axis--*/
+	xaxis grid label="Age at Year 0";
+
+	/*--Y Axis--*/
+	yaxis grid label="Viral Load Difference";
+run;
+title;
+
+**********************************************************************************************;
+/*scatterplot of CD4+ T Cells vs age*/
+
+
+
+/*RUN THIS LATER 
+ * PROC CORR DATA= Project1_Years0and2_1 Pearson nomiss;
+ 
+	Var VLOADdiff LEU3Ndiff AGG_MENTdiff AGG_PHYSdiff VLOAD_0 LEU3N_0 
+		AGG_MENT_0 AGG_PHYS_0 AGE_0 BMI_0 RACE_0 HASHV_0 DKGRP_0 SMOKE_0 EDUCBAS_0
+		ADH_2 INCOME_0; *need to change ADH to numeric;
+		RUN;*/ 
+
+
+********************************************************************************************;
+
+/*Boxplot of VLOADdiff*/
+
+/*--Set output size--*/
+ods graphics / reset imagemap;
+
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--TITLE and FOOTNOTE--*/
+	title "Difference in HIV Viral Load Between Year 2 and Year 0 Among Patients Who Reported Using Hard Drugs at Year 0 vs Not";
+
+	/*--Box Plot settings--*/
+	vbox VLOADdiff / category=HARD_DRUGS_0 fillattrs=(color=CXc50d23) name= 'Box';
+
+	/*--Category Axis--*/
+	xaxis fitpolicy=splitrotate label="Use of Hard Drugs at Year 0";
+
+	/*--Response Axis--*/
+	yaxis label="Difference in Viral Load" grid;
+run;
+
+ods graphics / reset;
+title;
+
+***********************************************************************************************;
+
+
+
+/*Boxplot of LEU3Ndiff*/
+
+
+/*--Set output size--*/
+ods graphics / reset imagemap;
+
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--TITLE and FOOTNOTE--*/
+	title "Difference in CD4+ T Cells Between Year 2 and Year 0 Among Patients Who Reported Using Hard Drugs vs Not";
+
+	/*--Box Plot settings--*/
+	vbox LEU3Ndiff / category=HARD_DRUGS_0 fillattrs=(color=CXfcfc20) 
+		DataSkin=sheen name='Box';
+
+	/*--Category Axis--*/
+	xaxis fitpolicy=splitrotate label="Use of Hard Drugs at Year 0";
+
+	/*--Response Axis--*/
+	yaxis label="Difference in CD4+ T Cells" grid;
+run;
+
+ods graphics / reset;
+title; 
+
+
+************************************************************************************************;
+
+/*boxplot of agg_mentdiff*/
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--TITLE and FOOTNOTE--*/
+	title "Difference in Aggregate Mental Quality of Life Score Between Year 2 and Year 0 Among Patients Who Reported Using Hard Drugs vs Not";
+
+	/*--Box Plot settings--*/
+	vbox AGG_MENTdiff / category=HARD_DRUGS_0 fillattrs=(color=CX20fc4c) 
+		name='Box';
+
+	/*--Category Axis--*/
+	xaxis fitpolicy=splitrotate label="Use of Hard Drugs at Year 0";
+
+	/*--Response Axis--*/
+	yaxis label="Difference in Aggregate Mental Quality of Life Score" grid;
+run;
+
+ods graphics / reset;
+title;
+
+***********************************************************************************************;
+/*boxplot of AGG_PHYSdiff*/
+/*--Set output size--*/
+ods graphics / reset imagemap;
+
+/*--SGPLOT proc statement--*/
+proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
+	/*--TITLE and FOOTNOTE--*/
+	title "Difference in Aggregate Physical Quality of Life Score Between Year 2 and Year 0 Among Patients Who Reported Using Hard Drugs vs Not";
+
+	/*--Box Plot settings--*/
+	vbox AGG_PHYSdiff / category=HARD_DRUGS_0 fillattrs=(color=CX2720fc) 
+		name='Box';
+
+	/*--Category Axis--*/
+	xaxis fitpolicy=splitrotate label="Use of Hard Drugs at Year 0";
+
+	/*--Response Axis--*/
+	yaxis label="Difference in Aggregate Physical Quality of Life Score" grid;
+run;
+
+ods graphics / reset;
+title;
+***************************************************************************************************;
+PROC GLM DATA = Project1_Years0and2_1;
+	CLASS HARD_DRUGS_0;
+	MODEL VLOADdiff = HARD_DRUGS_0 VLOAD_0;
+		  RUN;
