@@ -2,13 +2,13 @@
 *****************************************************************************************
 *                                                                                       *
 *   PROGRAM:    Project1.sas                                                            *
-*   PURPOSE:    Data Analysis of Project 1                                              *
+*   PURPOSE:    Data Analysis of Project 1 - Data Cleaning                              *
 *   AUTHOR:     Bridget Balkaran                                                        *
 *   CREATED:    2017-09-15                                                              *
 *                                                                                       *
 *   COURSE:     BIOS 6623 - Advanced Data Analysis                                      *
-*   DATA USED:  hiv_6623_final.csv                                                                                *
-*   MODIFIED:   DATE  2017-09-15      Read in Data                                      *
+*   DATA USED:  hiv_6623_final.csv                                                      *
+*   MODIFIED:   DATE  2017-09-27      Read in Data                                      *
 *               ----------  --- ------------------------------------------------------- *
 *                                                                                       *
 *                                                                                       *
@@ -16,7 +16,8 @@
 ***********************************************************************************; RUN;
 /*Import Data*/
 PROC IMPORT
-		DATAFILE	= "/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data Analysis/Project_1/hiv_6623_final.csv"
+		DATAFILE	= "/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data
+		Analysis/Project_1/hiv_6623_final.csv"
 		OUT			= Project1.hivdata
 		DBMS		= CSV
 		REPLACE		;
@@ -67,7 +68,9 @@ DATA Project1Clean2;
 	RUN;
 	
 
-/*Baseline value of the outcome
+/*Covariates to include as per investigator
+
+Baseline value of the outcome
 Baseline age 
 Baseline BMI 
 Race - NHW vs. Other
@@ -147,27 +150,52 @@ DATA Project1_Years0and2;
 DATA Project1_Years0and2_1;
 	SET Project1_Years0and2;
 	VLOADdiff = VLOAD_2 - VLOAD_0;
+	log10VLOADdiff = log10(VLOAD_2) - log10(VLOAD_0);   *used log10 difference as per investigator;
+	log10VLOAD_0 = log10(VLOAD_0);
 	LEU3Ndiff = LEU3N_2 - LEU3N_0;
 	AGG_MENTdiff = AGG_MENT_2 - AGG_MENT_0;
 	AGG_PHYSdiff = AGG_PHYS_2 - AGG_PHYS_0;
 	RUN;
+
+/*Recode variables as per investigator's interest, Final Clean and Coded Dataset*/	
+DATA Project1.Project1_Years0and2_2;
+	Set Project1_Years0and2_1;
+	IF RACE_0=1 THEN RACE_NHW =1; ELSE RACE_NHW = 0;
+	IF HASHV_0 = 2 THEN POTUSE = 1; ELSE POTUSE = 0;
+	DKgr13prWk = 0;
+	IF DKGRP_0 = 3 THEN DKgr13prWK = 1;
+	IF SMOKE_0 = 3 THEN CURSMOKE = 1; ELSE CURSMOKE = 0;
+	IF INCOME_0 = 1 THEN BaseINC = 0;
+	IF INCOME_0 = 2 THEN BaseINC = 1;
+	IF INCOME_0 =3 THEN BaseINC = 1;
+	IF INCOME_0 = 4 THEN BaseINC = 1;
+	IF INCOME_0 = 5 THEN BaseINC = 2;
+	IF INCOME_0 = 6 THEN BaseINC = 2;
+	IF INCOME_0 = 7 THEN BaseINC = 2;
+	IF INCOME_0 = 9 THEN BaseINC = .;
+	IF EDUCBAS_0 = 4 THEN GRthanHS = 1;ELSE GRthanHS=0;
+	IF EDUCBAS_0 = 5 THEN GRthanHS = 1;
+	IF EDUCBAS_0 = 6 THEN GRthanHS = 1;
+	IF EDUCBAS_0 = 7 THEN GRthanHS = 1;
+	IF ADH_2 = 1 THEN ADH2gr95 = 1;
+	IF ADH_2 = 2 THEN ADH2gr95 = 1;
+	IF ADH_2 = 3 THEN ADH2gr95 = 0;
+	IF ADH_2 = 4 THEN ADH2gr95 = 0;
+	IF ADH_2 = . THEN ADH2gr95 = .;
+	RUN; 
 	
-	/*IF RACE_0 = 1 Then Race_0 = 0; IF RACE_0 = 2 or 3 or 4 or 5 or 6 or 7 or 8 THEN RACE_0  = 1;
-	IF HASHV_0 = 2 THEN HASHV_0 = 1; IF HASHV_0 = 1 THEN HASHV_0 = 0;
-	IF DKGRP_0  = 3 THEN DKGRP_0 = 1; IF DKGRP_0 = 0 or 1 or 2 THEN DKGRP_0 = 0; 
-	IF SMOKE_0 = 3 THEN SMOKE_0 = 1; IF SMOKE_0 = 1 or 2 THEN SMOKE_0 = 0; 
-	IF EDUCBAS_0 = 1 or 2 or 3 THEN EDUCBAS_0 = 0; IF EDUCBAS_0 = 4 or 5 or 6 or 7 THEN EDUCBA_0 = 1;
-	IF ADH_2 = 3 or 4 THEN ADH_2 = 0; IF ADH_2  = 1 or 2 THEN ADH_0 = 1; 
-	IF INCOME_0 = 1 THEN INCOME_0 = 0; IF INCOME_0 = 2 or 3 or 4 THEN INCOME_0 = 1; IF INCOME_0 = 5 or 6 or 7 THEN INCOME_0 = 2;
-*/
+
+
 /*Summarize Data - 9/20/17 */
-PROC FREQ Data=Project1_Years0and2_1;
-TABLES hard_drugs_0 race_0 income_0 educbas_0 adh_2  /nocum;
+PROC FREQ Data=Project1_Years0and2_2;
+TABLES hard_drugs_0 race_0 income_0 educbas_0 adh_2 hashv_0 smoke_0 BaseINC years_2 /nocum;
 	RUN;		
 PROC MEANS DATA=Project1_Years0and2_1 N MEAN VAR STD NMISS MIN MAX;
 	VAR  VLOADdiff LEU3Ndiff AGG_PHYSdiff AGG_MENTdiff AGE_0 BMI_0;
 	RUN;
 	
+**********************************************************************************************;
+*Graphs for Interim Presentation;
 **********************************************************************************************;
 /*histogram of VLOADdiff*/
 ods graphics / reset imagemap;
@@ -300,8 +328,6 @@ title;
 
 ***********************************************************************************************;
 
-
-
 /*Boxplot of LEU3Ndiff*/
 
 
@@ -311,7 +337,8 @@ ods graphics / reset imagemap;
 /*--SGPLOT proc statement--*/
 proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
 	/*--TITLE and FOOTNOTE--*/
-	title "Difference in CD4+ T Cells Between Year 2 and Year 0 Among Patients Who Reported Using Hard Drugs vs Not";
+	title "Difference in CD4+ T Cells Between Year 2 and Year 0 Among Patients Who 
+	Reported Using Hard Drugs vs Not";
 
 	/*--Box Plot settings--*/
 	vbox LEU3Ndiff / category=HARD_DRUGS_0 fillattrs=(color=CXfcfc20) 
@@ -334,7 +361,8 @@ title;
 /*--SGPLOT proc statement--*/
 proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
 	/*--TITLE and FOOTNOTE--*/
-	title "Difference in Aggregate Mental Quality of Life Score Between Year 2 and Year 0 Among Patients Who Reported Using Hard Drugs vs Not";
+	title "Difference in Aggregate Mental Quality of Life Score Between Year 2 and Year 0
+	Among Patients Who Reported Using Hard Drugs vs Not";
 
 	/*--Box Plot settings--*/
 	vbox AGG_MENTdiff / category=HARD_DRUGS_0 fillattrs=(color=CX20fc4c) 
@@ -358,7 +386,8 @@ ods graphics / reset imagemap;
 /*--SGPLOT proc statement--*/
 proc sgplot data=WORK.PROJECT1_YEARS0AND2_1;
 	/*--TITLE and FOOTNOTE--*/
-	title "Difference in Aggregate Physical Quality of Life Score Between Year 2 and Year 0 Among Patients Who Reported Using Hard Drugs vs Not";
+	title "Difference in Aggregate Physical Quality of Life Score Between Year 2 
+	and Year 0 Among Patients Who Reported Using Hard Drugs vs Not";
 
 	/*--Box Plot settings--*/
 	vbox AGG_PHYSdiff / category=HARD_DRUGS_0 fillattrs=(color=CX2720fc) 
@@ -374,7 +403,22 @@ run;
 ods graphics / reset;
 title;
 ***************************************************************************************************;
-PROC GLM DATA = Project1_Years0and2_1;
-	CLASS HARD_DRUGS_0;
-	MODEL VLOADdiff = HARD_DRUGS_0 VLOAD_0;
-		  RUN;
+*End Graphs for Interim Presentation;
+***************************************************************************************************;
+
+
+
+
+/*Run regression  - VLOAD*/
+*Crude model with baseline;
+PROC GLM DATA = Project1.Project1_Years0and2_2;
+	CLASS Hard_Drugs_0;
+	MODEL log10VLOADdiff = Hard_Drugs_0 log10VLOAD_0 / clm solution ; 
+	QUIT;
+
+*Full Model;
+PROC GLM DATA = Project1.Project1_Years0and2_2;
+	CLASS Hard_Drugs_0 Race_NHW POTUSE DKgr13prWK CURSMOKE BaseINC GRthanHS ADH2gr95;
+	MODEL log10(VLOADdiff) = Hard_Drugs_0 log10(VLOAD_0) Race_NHW POTUSE DKgr13prWK 
+	CURSMOKE BaseINC GRthanHS ADH2gr95;
+	QUIT;
