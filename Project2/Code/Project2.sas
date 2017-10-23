@@ -2,13 +2,13 @@
 *****************************************************************************************
 *                                                                                       *
 *   PROGRAM:    Project2.sas                                                            *
-*   PURPOSE:    Data Analysis of Project  - Data Cleaning                              *
+*   PURPOSE:    Data Analysis of Project 2  - Data Cleaning                              *
 *   AUTHOR:     Bridget Balkaran                                                        *
 *   CREATED:    2017-10-10                                                             *
 *                                                                                       *
 *   COURSE:     BIOS 6623 - Advanced Data Analysis                                      *
 *   DATA USED:  vadata2.sas7bdat                                                     *
-*   MODIFIED:   DATE  2017-10-13                                                        *
+*   MODIFIED:   DATE  2017-10-19                                                       *
 *               ----------  --- ------------------------------------------------------- *
 *                                                                                       *
 *                                                                                       *
@@ -20,7 +20,8 @@ DATA Project2.Raw;
 	RUN;
 
 /*Data Exploration*/ 
-PROC UNIVARIATE DATA= Project2.Raw;
+PROC UNIVARIATE DATA= Project2.Raw; 
+	BY sixmonth;
 	qqplot;
 	RUN;
 	
@@ -44,7 +45,9 @@ PROC FREQ DATA = project2.missing;
 	TABLES ASA*death30/ missing;  
 	TABLES death30*ALbumin_Miss/ missing; 
 	TABLES Proced*Albumin_miss/ missing;
-	TABLES ASA*Albumin_miss/ missing; 
+	TABLES ASA*Albumin_miss/ missing;
+	TABLES hospcode*Albumin_miss/ missing;
+	Tables sixmonth*Albumin_miss/ missing; 
 	RUN; 
 
 /*Continuous variables*/ 
@@ -95,24 +98,51 @@ DATA Project2.Clean;
 DATA Project2.Sixmonth39;
 	SET Project2.Clean;
 	If sixmonth = 39;
-	WeightLBS  = Weight* 2.2;  *SEE IF SOME WEIGHT VALUES ARE ENTERED IN KGS, CONVERT TO LBS TO CHECK; 
-	RUN;                       * NEED TO FIGURE OUT HOW TO MERGE THE CONVERTED VALUES FOR SIXMONTH 39 INTO THE DATASET; 
+	WeightLBS  = Weight* 2.2;
+	Weight_New  = Weight;       *SEE IF SOME WEIGHT VALUES ARE ENTERED IN KGS, CONVERT TO LBS TO CHECK; 
+	IF Hospcode <= 16 THEN Weight_New  = WeightLBS; 
+	RUN; * NEED TO FIGURE OUT HOW TO MERGE THE CONVERTED VALUES FOR SIXMONTH 39 INTO THE DATASET; 
 
+/*Sort by HospCode*/	
+PROC SORT DATA = Project2.Sixmonth39; 
+By hospcode; 
+RUN; 
 
-PROC SORT DATA= Project2.Clean; 
+/*check to see if weights have been corrected*/
+PROC MEANS DATA = Project2.Sixmonth39;
+VAR Weight WeightLBS Weight_NEW; 
+BY hospcode;
+RUN; 
+
+/*Merge these Datasets*/
+DATA Project2.Clean2;
+	MERGE Project2.Sixmonth39  Project2.Clean;
+	RUN; 
+	
+
+PROC SORT DATA= Project2.Clean2; 
 	BY sixmonth; 
 	RUN;
+
+/*Recalculate BMI with Weight_New*/
+DATA Project2.Clean3; 
+	Set Project2.Clean2;
+	BMI_Calc2 = ((Weight_New /height**2) * 703); *use bmi_calc2 in analysis;
+	RUN; 
+
 	
-PROC EXPORT DATA = Project2.Clean 
+	
+PROC EXPORT DATA = Project2.Clean3;  
  OUTFILE = '/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data Analysis/Project_2/Clean.csv'
  DBMS = CSV 
  REPLACE;  *EXPORT TO CSV TO CONFIRM CHANGES HAVE BEEN MADE;
  RUN;
 
+PROC CORR DATA = Project2.Clean3;
+	VAR hospcode sixmonth proced asa albumin bmi_calc2;
+	RUN; *albumin moderately negatively correlated with asa: rho = -0.38;
+	
 
-
-
-	 
 		
 
 	
