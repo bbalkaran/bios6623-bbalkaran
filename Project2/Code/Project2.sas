@@ -8,7 +8,7 @@
 *                                                                                       *
 *   COURSE:     BIOS 6623 - Advanced Data Analysis                                      *
 *   DATA USED:  vadata2.sas7bdat                                                     *
-*   MODIFIED:   DATE  2017-10-19                                                       *
+*   MODIFIED:   DATE  2017-10-26                                                       *
 *               ----------  --- ------------------------------------------------------- *
 *                                                                                       *
 *                                                                                       *
@@ -21,69 +21,11 @@ DATA Project2.Raw;
 
 /*Data Exploration*/ 
 PROC UNIVARIATE DATA= Project2.Raw; 
-	BY sixmonth;
-	qqplot;
+	BY hospcode;
 	RUN;
-	
-/*Create Missing Data Dataset*/ 
-DATA Project2.Missing;
-	set Project2.Raw;
-	IF Albumin = . THEN Albumin_Miss = 1; 
-		ELSE Albumin_Miss = 0; 
-	RUN; 
-
-/*Exploration of missing albumin data */ 
-PROC MEANS DATA = Project2.Missing;
-	CLASS death30 albumin_miss;
-	VAR Weight Height BMI;
-	TITLE "Descriptive Statistics for Subjects Missing vs. Not Missing Albumin Data";
-	RUN; 
-	
-
-PROC FREQ DATA = project2.missing;
-	TABLES Proced*death30/ missing;
-	TABLES ASA*death30/ missing;  
-	TABLES death30*ALbumin_Miss/ missing; 
-	TABLES Proced*Albumin_miss/ missing;
-	TABLES ASA*Albumin_miss/ missing;
-	TABLES hospcode*Albumin_miss/ missing;
-	Tables sixmonth*Albumin_miss/ missing; 
-	RUN; 
-
-/*Continuous variables*/ 
-PROC SGPANEL DATA = PRoject2.Missing;
-	PANELBY Death30;
-		vbox Weight / group = albumin_miss; 
-		title "Distribution of Weight by Albumin_Missing";
-	RUN;
-PROC SGPANEL DATA = PRoject2.Missing;
-	PANELBY Death30;
-		vbox Height / group = albumin_miss; 
-		title "Distribution of Height by Albumin_Missing";
-	RUN;
-PROC SGPANEL DATA = PRoject2.Missing;
-	PANELBY Death30;
-		vbox BMI / group = albumin_miss; 
-		title "Distribution of BMI by Albumin_Missing";
-	RUN;
-PROC SGPANEL DATA = PRoject2.Missing;
-	PANELBY Death30;
-		vbox BMI / group = albumin_miss; 
-		title "Distribution of Death30 by Albumin_Missing";
-	RUN;
-	
-/*Categorical*/ 
-proc sgpanel data=Project2.Missing;
-		panelby albumin_miss death30;
-		vbarbasic ASA /stat=pct ;
-		title "Distribution of ASA by Albumin_Missing";
-	run;
-proc sgpanel data=Project2.Missing;
-		panelby albumin_miss death30;
-		vbarbasic Proced /stat=pct ;
-		title "Distribution of Procedure by Albumin_Missing";
-	run;
-
+*********************************************************************************************************;
+/* Missing data in Albumin around 50%. Need to explore this more. Run Missing Data Analysis.sas after this file*/
+*********************************************************************************************************;
 /*Data Cleaning*/
 DATA Project2.Clean; 
 	SET Project2.Missing; 
@@ -117,6 +59,7 @@ RUN;
 /*Merge these Datasets*/
 DATA Project2.Clean2;
 	MERGE Project2.Sixmonth39  Project2.Clean;
+	IF weight_new = "." THEN Weight_new = weight; 
 	RUN; 
 	
 
@@ -130,19 +73,39 @@ DATA Project2.Clean3;
 	BMI_Calc2 = ((Weight_New /height**2) * 703); *use bmi_calc2 in analysis;
 	RUN; 
 
+/*confirm weights are correct*/
+PROC MEANS DATA = Project2.Clean3;
+By Hospcode;
+Run; 
+
+/*dichotomize ASA, not enough values in asa 1 for those who did not die*/
+DATA Project2.Clean4; 
+	SET Project2.Clean3;
+	IF  ASA  = 1 THEN ASA_CAT = 0;
+	IF  ASA  = 2 THEN ASA_CAT = 0;
+	IF  ASA  = 3 THEN ASA_CAT = 0;
+	IF ASA = 4 THEN ASA_CAT  = 1; 
+	IF ASA = 5 THEN ASA_CAT = 1;
+		RUN; 
+
+/*confirm changes*/ 
+PROC FREQ DATA = Project2.Clean4;
+Tables ASA_CAT/ nocum; 
+	RUN;
 	
-	
-PROC EXPORT DATA = Project2.Clean3;  
+PROC EXPORT DATA = Project2.Clean4 
  OUTFILE = '/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data Analysis/Project_2/Clean.csv'
  DBMS = CSV 
  REPLACE;  *EXPORT TO CSV TO CONFIRM CHANGES HAVE BEEN MADE;
  RUN;
 
+
 PROC CORR DATA = Project2.Clean3;
 	VAR hospcode sixmonth proced asa albumin bmi_calc2;
 	RUN; *albumin moderately negatively correlated with asa: rho = -0.38;
-	
-
+	* is this why albumin values are seen more in those with with higher ASA levels or 
+	  are people with higher ASA levels more likely to have have bloodwork and albumin levels??;
+	  
 		
 
 	

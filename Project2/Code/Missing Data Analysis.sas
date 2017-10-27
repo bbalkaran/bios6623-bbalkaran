@@ -2,52 +2,77 @@
 *****************************************************************************************
 *                                                                                       *
 *   PROGRAM:    Project2.sas                                                            *
-*   PURPOSE:    Data Analysis of Project 2 - Missing Data Exploration                    *
+*   PURPOSE:    Data Analysis of Project 2 - Missing Data Exploration of Albumin        *
 *   AUTHOR:     Bridget Balkaran                                                        *
 *   CREATED:    2017-10-19                                                              *
 *                                                                                       *
 *   COURSE:     BIOS 6623 - Advanced Data Analysis                                      *
 *   DATA USED:  vadata2.sas7bdat                                                        *
-*   MODIFIED:   DATE  2017-10-19                                                        *
+*   MODIFIED:   DATE  2017-10-26                                                        *
 *               ----------  --- ------------------------------------------------------- *
 *                                                                                       *
 *                                                                                       *
 *****************************************************************************************
 ***********************************************************************************; RUN;
 
-DATA Project2.Missing_AllVars;
-	set Project2.Clean3;
+/*albumin missing around 50% of data. Further exploration to see which variables 
+and levels are affected most. Other variables missing at around 2%. This should not bias results.*/ 
+
+/*Create Missing Data Dataset*/ 
+DATA Project2.Missing;
+	set Project2.Raw;
 	IF Albumin = . THEN Albumin_Miss = 1; 
 		ELSE Albumin_Miss = 0; 
-	IF Proced = . THEN Proced_Miss = 1; 
-		ELSE Proced_Miss = 0; 
-	IF ASA = . THEN ASA_Miss = 1; 
-		ELSE ASA_Miss = 0;
-	IF Weight_New = . THEN Weight_New_Miss = 1; 
-		ELSE Weight_New_Miss = 0;
-	IF Height = . Then Height_Miss = 1; 
-		ELSE Height_Miss = 0;
-	IF BMI_Calc2 = . Then BMI_Calc2_Miss = 1; 
-		ELSE BMI_Calc2_Miss = 0;
-	IF Death30 = . THEN Death30_Miss = 1; 
-		ELSE Death30_Miss = 0;
 	RUN; 
 
-PROC FREQ DATA = Project2.Missing_AllVars;
-/*Proced_Miss*/
-TABLES Proced_Miss*ASA/ missing;  
-TABLES Proced_Miss*Death30/ missing; 
-TABLES Proced_Miss*HospCode/ missing; 
-TABLES Proced_Miss*Sixmonth/ missing;
-RUN; 
+/*Exploration of missing albumin data */ 
+PROC MEANS DATA = Project2.Missing;
+	CLASS death30 albumin_miss;
+	VAR Weight Height BMI;
+	TITLE "Descriptive Statistics for Subjects Missing vs. Not Missing Albumin Data";
+	RUN; 
+	
 
-TABLES Proced*death30/ missing;
+PROC FREQ DATA = project2.missing;
+	TABLES Proced*death30/ missing;
 	TABLES ASA*death30/ missing;  
 	TABLES death30*ALbumin_Miss/ missing; 
 	TABLES Proced*Albumin_miss/ missing;
 	TABLES ASA*Albumin_miss/ missing;
 	TABLES hospcode*Albumin_miss/ missing;
 	Tables sixmonth*Albumin_miss/ missing; 
-TABLES  Albumin_Miss Proced_Miss ASA_Miss Weight_New_Miss Height_Miss BMI_Calc2_Miss; 
-BY hospcode;
-RUN; 
+	RUN; 
+
+/*Continuous variables*/ 
+PROC SGPANEL DATA = PRoject2.Missing;
+	PANELBY Death30;
+		vbox Weight / group = albumin_miss; 
+		title "Distribution of Weight by Albumin_Missing";
+	RUN;
+PROC SGPANEL DATA = PRoject2.Missing;
+	PANELBY Death30;
+		vbox Height / group = albumin_miss; 
+		title "Distribution of Height by Albumin_Missing";
+	RUN;
+PROC SGPANEL DATA = PRoject2.Missing;
+	PANELBY Death30;
+		vbox BMI / group = albumin_miss; 
+		title "Distribution of BMI by Albumin_Missing";
+	RUN;
+PROC SGPANEL DATA = PRoject2.Missing;
+	PANELBY Death30;
+		vbox BMI / group = albumin_miss; 
+		title "Distribution of Death30 by Albumin_Missing";
+	RUN;
+	
+/*Categorical*/ 
+proc sgpanel data=Project2.Missing;
+		panelby albumin_miss death30;
+		vbarbasic ASA /stat=pct ;
+		title "Distribution of ASA by Albumin_Missing";
+	run;
+proc sgpanel data=Project2.Missing;
+		panelby albumin_miss death30;
+		vbarbasic Proced /stat=pct ;
+		title "Distribution of Procedure by Albumin_Missing";
+	run;
