@@ -2,13 +2,13 @@
 *****************************************************************************************
 *                                                                                       *
 *   PROGRAM:    Project2.sas                                                            *
-*   PURPOSE:    Data Analysis of Project 2  - Data Cleaning                              *
+*   PURPOSE:    Data Analysis of Project 2  - Data Cleaning                             *
 *   AUTHOR:     Bridget Balkaran                                                        *
-*   CREATED:    2017-10-10                                                             *
+*   CREATED:    2017-10-10                                                              *
 *                                                                                       *
 *   COURSE:     BIOS 6623 - Advanced Data Analysis                                      *
-*   DATA USED:  vadata2.sas7bdat                                                     *
-*   MODIFIED:   DATE  2017-10-26                                                       *
+*   DATA USED:  vadata2.sas7bdat                                                        *
+*   MODIFIED:   DATE  2017-10-31                                                        *
 *               ----------  --- ------------------------------------------------------- *
 *                                                                                       *
 *                                                                                       *
@@ -20,8 +20,28 @@ DATA Project2.Raw;
 	RUN;
 
 /*Data Exploration*/ 
-PROC UNIVARIATE DATA= Project2.Raw; 
+PROC UNIVARIATE DATA= Project2.Raw;
 	BY hospcode;
+	VAR Proced death30 height weight BMI ASA Albumin;
+	RUN;
+	
+PROC MEANS Data = Project2.raw;
+by hospcode;
+where sixmonth = 39;
+VAR weight;
+RUN;
+
+/*Hospital 30 Missing all BMI, Weight, and Height Data */
+PROC PRINT DATA = Project2.RAW; 
+by sixmonth;
+where hospcode = 30;
+RUN;
+
+/*Create missing albumin Dataset for further analysis*/	
+DATA Project2.Missing;
+	set Project2.Raw;
+	IF Albumin = . THEN Albumin_Miss = 1; 
+		ELSE Albumin_Miss = 0; 
 	RUN;
 *********************************************************************************************************;
 /* Missing data in Albumin around 50%. Need to explore this more. Run Missing Data Analysis.sas after this file*/
@@ -84,8 +104,8 @@ DATA Project2.Clean4;
 	IF  ASA  = 1 THEN ASA_CAT = 0;
 	IF  ASA  = 2 THEN ASA_CAT = 0;
 	IF  ASA  = 3 THEN ASA_CAT = 0;
-	IF ASA = 4 THEN ASA_CAT  = 1; 
-	IF ASA = 5 THEN ASA_CAT = 1;
+	IF  ASA = 4 THEN ASA_CAT  = 1; 
+	IF  ASA = 5 THEN ASA_CAT = 1;
 		RUN; 
 
 /*confirm changes*/ 
@@ -101,7 +121,7 @@ PROC EXPORT DATA = Project2.Clean4
 
 
 PROC CORR DATA = Project2.Clean3;
-	VAR hospcode sixmonth proced asa albumin bmi_calc2;
+	VAR death30 hospcode sixmonth proced asa albumin bmi_calc2;
 	RUN; *albumin moderately negatively correlated with asa: rho = -0.38;
 	* is this why albumin values are seen more in those with with higher ASA levels or 
 	  are people with higher ASA levels more likely to have have bloodwork and albumin levels??;

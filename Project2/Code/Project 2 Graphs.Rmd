@@ -1,0 +1,69 @@
+---
+title: "Project 2 Graphs"
+author: "Bridget Balkaran"
+date: "10/31/2017"
+output: html_document
+---
+read in data
+```{r}
+library(readxl)
+Project_2_Results_Table <- read_excel("~/Dropbox/CSPH/Fall 2017/BIOS 6623 Advanced Data Analysis/Project 2/Project 2 Results Table.xlsx", 
+    col_types = c("numeric", "numeric", "numeric", 
+        "numeric", "skip", "numeric", "numeric", 
+        "numeric", "skip"))
+View(Project_2_Results_Table)
+ResultsTable <- Project_2_Results_Table
+hospital <- ResultsTable$hosptial
+ObsDeathRtPrim <- ResultsTable$`observed death rate (primary model) `
+ExpDeathRtPrim <- ResultsTable$`adjusted expected  death rate (primary model) `
+ObsDeathRtSec <- ResultsTable$`observed death rate (primary model) `
+ExpDeathRtSec <- ResultsTable$`adjusted expected  death rate (model with albumin) `
+PrimaryRatio <- ResultsTable$`observed:expected  (primary model) `
+SecondaryRatio <- ResultsTable$`observed: expected (secondary)`
+
+```
+2. create dfs for each graph. obs and expected for each hospital (primary)
+```{r}
+OandEPrimary <- data.frame(x = hospital, y = ObsDeathRtPrim, type = "Observed Death Rate")
+OandEPrimary <- rbind(OandEPrimary, data.frame( x = hospital, y = ExpDeathRtPrim, type = "Expected Death Rate"))
+OandEPrimary2 <- OandEPrimary 
+OandEPrimary2$y <- (OandEPrimary2$y) *100
+library(ggplot2)
+ggplot(OandEPrimary2, aes(x, y, group = type, col = type)) + geom_line() + geom_point()+ labs( title = "Observed and Expected Death Rates in Primary Model", x= "VA Hospital Code", y="Death Rate (%)") 
+
+
+```
+
+3. create df: obs and exp for each hospital (secondary: with albumin)
+```{r}
+OandESecondary <- data.frame(x = hospital, y = ObsDeathRtSec, type = "Observed Death Rate")
+OandESecondary <- rbind(OandESecondary, data.frame( x = hospital, y = ExpDeathRtSec, type = "Expected Death Rate"))
+OandESecondary2 <- OandESecondary 
+OandESecondary2$y <- (OandESecondary2$y) *100
+library(ggplot2)
+ggplot(OandESecondary2, aes(x, y, group = type, col = type)) + geom_line() + geom_point()+ labs( title = "Observed and Expected Death Rates in Model with Albumin", x= "VA Hospital Code", y="Death Rate (%)") 
+```
+
+4. graph of ratio of observed to expected 
+
+```{r}
+OtoE <- data.frame(x = hospital, y = PrimaryRatio, type = "Observed:Expected Primary Model")
+OtoE <- rbind(OtoE, data.frame( x = hospital, y = SecondaryRatio, type = "Observed:Expected Model With Albumin"))
+#OandESecondary2 <- OandESecondary 
+#OandESecondary2$y <- (OandESecondary2$y) *100
+library(ggplot2)
+ggplot(OtoE, aes(x, y, group = type, col = type)) + geom_point()+ geom_hline(yintercept = 1.2) + labs( title = "Observed to Expected Ratios (Primary Model and the Model with Albumin)", x ="VA Hospital Code",  y = "Observed to Expected Death Rate Ratio" ) 
+```
+
+5. 
+```{r}
+library(haven)
+getwd()
+
+calpercentchange <- read_sas("calpercentchange.sas7bdat")
+View(calpercentchange)
+hosp <- calpercentchange$hospcode
+percent_change <- calpercentchange$PercentChange
+ggplot(calpercentchange, aes(x = hosp, y = percent_change, col = 'blue')) + geom_point()+ geom_hline(yintercept = 0)+ labs( title = "Percent Change between Model with Albumin and Primary Model", x ="VA Hospital Code",  y = "Percent Change" ) + theme(legend.position="none")
+```
+
