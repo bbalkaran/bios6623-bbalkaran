@@ -22,82 +22,150 @@ PROC IMPORT
 		REPLACE		;
 	RUN;
 	
+
+
+/* Create counts for number of timepoints*/ 
+proc sql;
+	create table Project3.MemoryData_Clean as
+	select *, 
+		count(id) as Num_ID,
+ 		count(blockr) as num_BlockR,
+ 		count(animals) as num_animals,
+ 		count(logmemI) as num_logmemI,
+ 		count(logmemII) as num_logmemII
+	from Project3.Memorydata
+	group by ID
+	order by ID;
+quit;
+
+DATA illus; 
+	SET Project3.memorydata_clean; 
+	If num_BlockR < 3 then Delete; 
+	If num_animals < 3 then Delete;
+	if num_logmemI < 3 then Delete; 
+	IF num_logmemII < 3 then Delete; 
+	RUN; 
+
+Proc Means DATA  = Project3.MEMORYDATA_CLEAN;                      *Min age here is 67.7 use this as age adjustment in model; 
+Where demind = 1; 
+RUN ; 
+
+DATA Project3.Memorydata_Clean;
+	SET Project3.Memorydata_Clean; 
+	age_new  = age - 67.7; 
+	RUN; 
+
 	
-PROC SORT DATA =Project3.memorydata;
-by id age;
-RUN;
-	
-/*avg age coming into study*/
-DATA Project3.entryage;
-	SET PROJECT3.MEMORYDATA;
+
+/*create dataset looking at subjects at entry, not multiple obs */ 	
+DATA Work.MemoryData3;      
+	SET Project3.memorydata_clean;
 	By id;
-	FIRSTid = first.id;
+	Firstid = FIrst.id;
 	IF Firstid = 1;
-	RUN; 
-	
-PROC MEANS DATA = Project3.EntryAge n nmiss mean std min max kurt skew;
-VAR age;
-where demind = 0; 
+	*FirstBlockR = First.BlockR;
+	*IF FirstblockR = 1;
 	RUN; 
 
-/*Look at individuals by id*/
-PROC MEANS DATA=Project3.memory2;
-VARS SES Age BlockR Animals logmemI logmemII Ageonset demind;
-*BY id; 
-*OUTPUT OUT = project3.summarystats;
-RUN; 
+/*Use this data to get summary statistics for study pop at entry */ 
+PROC MEANS DATA = Project3.Memorydata_Clean mean std min max nmiss;        *Min age here is 59.5 years, use this as adjustment in model;
+	RUN;                                                          * age should be 67; 
 
-PROC FREQ data=Project3.Memory2;
-TABLE Gender cdr blockR animals logmemI logmemII/ missing;
-RUN;
-DATA Work.Missing; 
-	SET Project3.memory2;
-	IF BlockR = . THEN BlockRmiss = 1; ELSE BlockRmiss = 0;
-	IF Animals = . THEN AnimalsMiss = 1; ELSE AnimalsMiss = 0;
-	IF logmemI = . THEN logmemImiss = 1; ELSE logmemImiss = 0;
-	IF logmemII = . THEN logmemIImiss = 1; ELSE logmemIImiss = 0; 
-	IF GENDER  = . then gendermiss = 1; else gendermiss = 0;
+*******************************************************************************************************;
+/* Create subset datasets for analysis of each outcome var. These are the datasets that will be used in the analysis. */
+
+
+/*BlockR*/ 	
+/*Remove subjects with < 3 timepoints, Create changepoint variable */ 	
+DATA Project3.BlockR; 
+	SET Project3.MemoryData_Clean; 
+	If Num_BlockR < 3 THEN Delete;
+	DROP animals num_animals logmemI num_logmemI logmemII num_logmemII; 
+	Changepoint = 0; 
+	Tau = 4;
+	If age - ageonset < Tau THEN Changepoint = 0;                     
+	ELSE IF age - ageonset = Tau Then Changepoint = 0; 
+	ELSE Changepoint = Age - ageonset + Tau;
 	RUN; 
-PROC FREQ DATA = Work.Missing; 
-	TABLES BlockRmiss AnimalsMiss logmemImiss logmemIImiss/ nocum;
-	RUN; 
-
-
- 
-DATA Project3.AnalysisPop;
-	SET Project3.Memorydata;
-   count + 1;
-  by id;
-  if first.id then count = 1;
-  RUN;
- 
-DATA Project3.AnalysisPop2;
-	Set Project3.AnalysisPop;
+/*BlockR - how many subjects in this dataset? */ 
+DATA Project3.BlockR2; /*n = 192*/ 
+	SET Project3.BlockR;
 	By id; 
-	LastId = last.id;
-	IF lastid = 1;   *216 ids;
-	IF count > 2;     *205 < = 3; 
-	RUN; 
-DATA Project3.AnalysisPop3;
-	SET Project3.analysispop2 (KEEP = id Lastid Count);
-	RUN;
-
-DATA Project3.Memory2;
-	MERGE Project3.Memorydata Project3.analysisPop3;
-	By id;
-	if count = . THEN Delete;
+	FirstId = first.id;
+	IF Firstid = 1;   
 	RUN;
 	
-Proc Print Data  = Project3.Memory2;	
-Where count = .;
-RUN; 
+	
+	
+	
+	
 
-/*histograms and proc univariate*/
+/*Animals*/ 
+/*Remove subjcts with < 3 Timepoints, Create changepoint */ 	
+DATA Project3.Animals; 
+	SET Project3.Memorydata_Clean; 
+	If Num_Animals < 3 THEN Delete;
+	DROP  blockR num_blockR logmemI num_logmemI logmemII num_logmemII; 
+	Changepoint = 0; 
+	If age - ageonset + 4 >= 0 THEN Changepoint = age - ageonset + 4;  
+	RUN;
+	
+/* Animals  - How many subjects in this dataset? */ 
+DATA Project3.Animals2; /* n = 187*/ 
+	SET Project3.Animals;
+	By id; 
+	FirstId = first.id;
+	IF Firstid = 1;   
+	RUN;
 
-PROC UNIVARIATE DATA = Project3.Memory2;
-Histogram _ALL_;
-RUN;
 
+
+/*LogMemI*/ 
+/*Create Changepoint*/ 
+DATA Project3.LogMemI; 
+	SET Project3.Memorydata_Clean; 
+	If Num_LogMemI < 3 THEN Delete;
+	DROP blockR num_blockR animals num_animals logmemII num_logmemII;
+	Changepoint = 0; 
+	Tau = 4;
+	If age - ageonset < Tau THEN Changepoint = 0;                     
+	ELSE IF age - ageonset = Tau Then Changepoint = 0; 
+	ELSE Changepoint = Age - ageonset + Tau;
+	RUN;
+/* How many subjects in this dataset?*/
+DATA Project3.LogMemI2; /* n = 193*/ 
+	SET Project3.LogMemI;
+	By id; 
+	FirstId = first.id;
+	IF Firstid = 1;   
+	RUN;
+	
+	
+/*LogMemII*/ 
+/*Create Changepoint*/	
+DATA Project3.LogMemII;  
+	SET Project3.Memorydata_Clean;
+	If Num_LogMemII < 3 THEN Delete;
+	DROP blockR num_blockR animals num_animals logmemI num_logmemI; 
+	Changepoint = 0; 
+	If age - ageonset + 4 >= 0 THEN Changepoint = age - ageonset + 4;                     
+	RUN;
+
+PROC SORT DATA  = Project3.LogMemII;
+BY ID age;
+RUN; 	
+	
+/*How many subjects in this dataset */ 	
+DATA Project3.LogMemII2; /*n = 193*/ 
+	SET Project3.LogMemII;
+	By id; 
+	FirstId = first.id;
+	IF Firstid = 1;   
+	RUN;
+
+******************************************************************************************************; 
+	
+/*statistics for table 1 - need to subset by demind = 0 and demind = 1*/              ****Need to look at this again, this is by obs not sub; 
 
 
 
@@ -124,22 +192,24 @@ Tables Demind Gender  ;
 RUN;
 
 /*Examine Data*/ 	
-PROC UNIVARIATE DATA = Project3.memorydata;
+PROC UNIVARIATE DATA = Project3.memorydata_clean;
 	QQPLOT;
 	RUN; 
 
 
-/*Look at longitudinal plots - original plots including all subjects*/ 	
+/*Look at longitudinal plots - original plots including all subjects*/ 	 
+
 PROC SGplot DATA  = Project3.Memorydata;
 	series x=age y= logmemI/  group = id;
 	where demind =1;
 	RUN; 
+	
 PROC SGplot DATA  = Project3.Memorydata;
 	series x=age y= logmemI/  group = id;
 	where demind =0;
 	RUN; 
 	
-	
+
 PROC SGplot DATA  = Project3.Memorydata;
 	series x=age y= logmemII/  group = id;
 	RUN; 
@@ -158,26 +228,60 @@ PROC SGplot DATA  = Project3.Memorydata;
 	
 	
 /*longitudinal plots including only those in the analysis*/
-PROC SGPANEL DATA  = Project3.Memory2;
+PROC SGPANEL DATA  = Project3.LogMemI;
+	panelby demind;
+	*refline axis = age  changepoint;
+	series x = age y=logmemI/ group = id;
+	title  "Logical Memory I Story A Score by Age in those without and with MCI/Dementia";
+	RUN; 
+	
+PROC SGPANEL DATA  = Project3.MemoryData2;
+	panelby demind;
+	series x = age y=logmemII/ group = id;
+	title  "Logical Memory II Story A Score by Age in those without and with MCI/Dementia";
+	RUN; 
+	
+PROC SGPANEL DATA  = Project3.MemoryData2;
+	panelby demind;
+	series x = age y=Animals/ group = id;
+	title  "Category Fluency for Animals Score by Age in those without and with MCI/Dementia";
+	RUN; 
+	
+PROC SGPANEL DATA  = Project3.MemoryData2;
+	panelby demind;
+	series x = age y=BlockR/ group = id;
+	title  "Block Design Test Score by Age in those without and with MCI/Dementia";
+	RUN; 
+
+
+
+
+/*Longitudinal plots by age at  dx */                                
+PROC SGPANEL DATA  = Project3.MemoryData2;
 	panelby demind;
 	series x = age y=logmemI/ group = id;
 	title  "Logical Memory I Story A Score by Age in those without and with MCI/Dementia";
 	RUN; 
 
-PROC SGPANEL DATA  = Project3.Memory2;
+PROC SGPANEL DATA  = Project3.MemoryData2;
 	panelby demind;
 	series x = age y=logmemII/ group = id;
 	title  "Logical Memory II Story A Score by Age in those without and with MCI/Dementia";
 	RUN; 
 
-PROC SGPANEL DATA  = Project3.Memory2;
+PROC SGPANEL DATA  = Project3.MemoryData2;
 	panelby demind;
 	series x = age y=Animals/ group = id;
 	title  "Category Fluency for Animals Score by Age in those without and with MCI/Dementia";
 	RUN; 
 
-PROC SGPANEL DATA  = Project3.Memory2;
+PROC SGPANEL DATA  = Project3.MemoryData2;
 	panelby demind;
-	series x = age y=BlockR/ group = id;
+	series x = ageo y=BlockR/ group = id;
 	title  "Block Design Test Score by Age in those without and with MCI/Dementia";
 	RUN; 
+
+
+
+
+
