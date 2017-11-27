@@ -8,7 +8,7 @@
 *                                                                                       *
 *   COURSE:     BIOS 6623 - Advanced Data Analysis                                      *
 *   DATA USED:  Project3Data.csv                                                        *
-*   MODIFIED:   DATE  2017-11-15                                                        *
+*   MODIFIED:   DATE  2017-11-22                                                        *
 *               ----------  --- ------------------------------------------------------- *
 *                                                                                       *
 *                                                                                       *
@@ -22,7 +22,7 @@
 
 /*Random Intercept*/ 
 *LogMemI;
-PROC MIXED DATA = Project3.LogMemI;
+/*PROC MIXED DATA = Project3.LogMemI;
 	CLASS ID gender demind;
 	MODEL logmemI = age_new gender ses demind age_new*demind changepoint/ solution;
 	RANDOM intercept / subject= id g gcorr v vcorr; 
@@ -35,7 +35,7 @@ PROC MIXED DATA = Project3.LogMemII;
 	MODEL logmemII = age_new gender ses demind age_new*demind changepoint/ solution;
 	RANDOM intercept / subject= id g gcorr v vcorr; 
 	title 'Mixed Model with RANDOM INTERCEPT - LogMemII on age';
-	RUN; 
+	RUN; */
 
 *Animals; 
 PROC MIXED DATA = Project3.Animals;
@@ -46,12 +46,12 @@ PROC MIXED DATA = Project3.Animals;
 	RUN; 
 
 *BlockR;
-PROC MIXED DATA = Project3.BlockR;
+/*PROC MIXED DATA = Project3.BlockR;
 	CLASS ID gender demind;
 	MODEL BlockR = age_new gender ses demind  age_new*demind changepoint/ solution;
 	RANDOM intercept / subject= id g gcorr v vcorr; 
 	title 'Mixed Model with RANDOM INTERCEPT - BlockR on age';
-	RUN; 
+	RUN; */
 	
 	
 
@@ -60,7 +60,7 @@ PROC MIXED DATA = Project3.BlockR;
  
 /*Random Intercept and Random Slope*/ 
 *LogMemI;
-PROC MIXED DATA = Project3.LogMemI;
+/*PROC MIXED DATA = Project3.LogMemI;
 	CLASS ID gender demind;
 	MODEL logmemI = age gender ses demind age*demind changepoint / solution;
 	RANDOM intercept age changepoint / subject= id g gcorr v vcorr; 
@@ -73,7 +73,7 @@ PROC MIXED DATA = Project3.LogMemII;
 	MODEL logmemII = age gender ses  demind age*demind changepoint/ solution;
 	RANDOM intercept age changepoint / subject= id g gcorr v vcorr; 
 	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE- LogMemII on age';
-	RUN; 
+	RUN; */
 
 *Animals; 
 PROC MIXED DATA = Project3.Animals;
@@ -84,22 +84,21 @@ PROC MIXED DATA = Project3.Animals;
 	RUN; 
 
 *BlockR;
-PROC MIXED DATA = Project3.BlockR;
+/*PROC MIXED DATA = Project3.BlockR;
 	CLASS ID gender demind;
 	MODEL BlockR = age gender ses demind age*demind changepoint/ solution;
 	RANDOM intercept age changepoint / subject= id g gcorr v vcorr; 
 	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - BlockR on age';
-	RUN; 
+	RUN; */
 	
 *******************************************************************************************************************************;
 
-/*Random Intercept and Random Slope - UNSTRUCTURED VAR -> does not work for this project*/ 
-/*Comparing UN and CS*/ 
+
 
 *LogMemI;
-PROC MIXED DATA = Project3.logmemI;                                            *Smaller AIC for un??? what did I do wrong?;
+/*PROC MIXED DATA = Project3.logmemI;                                           
 	CLASS ID gender demind / ref= first;
-	MODEL logmemI = age_new gender ses demind age_new*demind changepoint/ solution;            * get different results when i change the reference????;
+	MODEL logmemI = age_new gender ses demind age_new*demind changepoint/ solution;            
 	RANDOM intercept age_new/ subject= id  type = un g gcorr v vcorr; 
 	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - UNSTRUCTURED G MATRIX - LogMemI on age';
 	RUN; 
@@ -114,44 +113,71 @@ PROC MIXED DATA = Project3.logmemII;
 	MODEL logmemII = age_new gender ses demind age_new*demind changepoint / solution;
 	RANDOM intercept age_new/ subject= id type = un g gcorr v vcorr; 
 	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - UNSTRUCTURED G MATRIX - LogMemII on age';
-	RUN; 
+	RUN; */
 
 
 
 
 
 *Animals; 
+/*THis is the model used for analysis*/ 
+PROC MIXED DATA = Project3.Animals;
+	CLASS ID gender;
+	MODEL animals = age_new gender ses demind age_new*demind changepoint / solution cl;
+	RANDOM intercept age_new / subject= id type = un g gcorr v vcorr ; 
+	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - UNSTRUCTURED G MATRIX -  Animals on age';
+	ESTIMATE 'B_agenew + B_agenew*demind' 
+					age_new 1
+					age_new*demind 1 / cl;
+	EStimate 'B_rate of change = (B_agenew + B_agenew*demind + B_changepoint)'
+					age_new 1
+					age_new*demind 1
+					changepoint 1 / cl;
+	RUN; 
+	
+PROC MIXED DATA = Project3.Animals;
+	CLASS ID gender;
+	MODEL animals = age_new gender ses demind age_new*demind changepoint / solution cl;
+	RANDOM intercept age_new / subject= id type = ar(1) g gcorr v vcorr ; 
+	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - ar1 -  Animals on age';
+	ESTIMATE 'B_agenew + B_agenew*demind' 
+					age_new 1
+					age_new*demind 1 / cl;
+	EStimate 'B_rate of change = (B_agenew + B_agenew*demind + B_changepoint)'
+					age_new 1
+					age_new*demind 1
+					changepoint 1 / cl;
+	RUN; 
 PROC MIXED DATA = Project3.Animals;
 	CLASS ID gender;
 	MODEL animals = age_new gender ses demind age_new*demind changepoint / solution;
-	RANDOM intercept age_new/ subject= id type = un g gcorr v vcorr; 
-	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - UNSTRUCTURED G MATRIX -  Animals on age';
+	RANDOM intercept age_new / subject= id type = cs g gcorr v vcorr ; 
+	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - CS-  Animals on age';
+	ESTIMATE 'B_agenew + B_agenew*demind' 
+					age_new 1
+					age_new*demind 1;
+	EStimate 'B_rate of change = (B_agenew + B_agenew*demind + B_changepoint)'
+					age_new 1
+					age_new*demind 1
+					changepoint 1;
 	RUN; 
-PROC MIXED DATA = Project3.Animals;
-	CLASS ID gender / ref = first;
-	MODEL animals = age_new gender ses demind age_new*demind changepoint / solution;
-	RANDOM intercept age_new/ subject= id type = un g gcorr v vcorr; 
-	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - UNSTRUCTURED G MATRIX -  Animals on age';
-	RUN; 
-
-
 
 
 
 *BlockR;
-PROC MIXED DATA = Project3.BlockR; 
+/*PROC MIXED DATA = Project3.BlockR; 
 	CLASS ID gender demind / ref = first;
 	MODEL BlockR = age_new gender ses demind age_new*demind changepoint/ solution;
-	RANDOM intercept age_new / subject= id type = un  g gcorr v vcorr;  /*take out random effect of changepoint*/ 
+	RANDOM intercept age_new / subject= id type = un  g gcorr v vcorr;  
 	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - UNSTRUCTURED G MATRIX - BlockR on age';
 	RUN; 
 
 PROC MIXED DATA = Project3.BlockR; 
 	CLASS ID gender demind;
 	MODEL BlockR = age_new gender ses demind age_new*demind changepoint/ solution;
-	RANDOM intercept age_new / subject= id type = un  g gcorr v vcorr;  /*take out random effect of changepoint*/ 
+	RANDOM intercept age_new / subject= id type = un  g gcorr v vcorr;  
 	title 'Mixed Model with RANDOM INTERCEPT AND SLOPE - UNSTRUCTURED G MATRIX - BlockR on age';
-	RUN; 
+	RUN; */ 
 
 
 	
