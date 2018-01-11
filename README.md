@@ -1,24 +1,16 @@
-# BIOS6623Class
+# BIOS6623 Class
+ 
+Please view this repository as an example of projects and reports I have worked on for BIOS 6623 Advanced Data Analysis. This repository contains code, reports, and additional documents including presentations. Happy browsing! 
 
-This folder contains the project materials for BIOS6623 minus datasets.  The datasets are not in this repository because you never know when data contains sensitive information. So, we want to minimize the risk that data could be accidentally shared. We have created folder templates for all projects. These provide one way of organizing work in an common framework.
+This folder is organized by project. 
 
-For this class, the datasets can be found on CANVAS.
+Project 0 - Linear Regression: Pre and Post 
 
-You might also be interested in the website for [BIOS6623](https://bios6623-ucd.github.oi).
+Project 1 - 
 
-Repository for Bridget Balkaran BIOS 6623
-HW1 Modifications
+Project 2 - Missing Data
 
-Step-wise changes to modifying README.md 
-1.On GitHub Class repo, cloned my individual remote class repo to local directory through GitKracken
-2.Pulled from GitHub
-3. Added HW1 modification and helpful links for myself
-4. Commited changes locally
-5. Pushed to GitHub
+Project 3 - Correlated Data
 
- Useful resources for working with GitKracken
-https://www.youtube.com/watch?v=f0y_xCeM1Rk Webinar: Using GitHub with GitKracken
-https://www.youtube.com/watch?v=kd4jMl_3LQE How to add and clone a remote repo
-https://www.youtube.com/watch?v=jPUew3gPoXw Webinar: Getting starte with GitKracken
-
+Project 4 - Grant Proposal: Sample Size and Power Calculation
 
