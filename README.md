@@ -4,13 +4,13 @@ Please view this repository as an example of projects and reports I have worked 
 
 This folder is organized by project. 
 
-Project 0 - Linear Regression: Pre and Post 
+Project 0 - Linear Regression: Pre and Post analysis
 
-Project 1 - 
+Project 1 - Lineear Regression: Comparing effects of full and reduced models 
 
-Project 2 - Missing Data
+Project 2 - Logistic Regression: Missing Data
 
-Project 3 - Correlated Data
+Project 3 - Longitudinal Analysis: Correlated Data
 
 Project 4 - Grant Proposal: Sample Size and Power Calculation
 
