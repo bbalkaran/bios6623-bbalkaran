@@ -6,7 +6,7 @@ This folder is organized by project.
 
 Project 0 - Linear Regression: Pre and Post analysis
 
-Project 1 - Lineear Regression: Comparing effects of full and reduced models 
+Project 1 - Linear Regression: Comparing effects of full and reduced models 
 
 Project 2 - Logistic Regression: Missing Data
 
