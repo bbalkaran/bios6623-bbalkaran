@@ -8,7 +8,11 @@
 *                                                                                       *
 *   COURSE:     BIOS 6623 - Advanced Data Analysis                                      *
 *   DATA USED:  vadata2.sas7bdat                                                        *
+<<<<<<< Updated upstream
 *   MODIFIED:   DATE  2017-10-31                                                        *
+=======
+*   MODIFIED:   DATE  2017-10-26                                                        *
+>>>>>>> Stashed changes
 *               ----------  --- ------------------------------------------------------- *
 *                                                                                       *
 *                                                                                       *
@@ -26,17 +30,28 @@ DATA Project2.Missing;
 	RUN; 
 
 /*Exploration of missing albumin data */ 
+<<<<<<< Updated upstream
 PROC MEANS DATA = Project2.Missing  N NMISS MEAN STD MIN MAX;
+=======
+PROC MEANS DATA = Project2.Missing;
+>>>>>>> Stashed changes
 	CLASS death30 albumin_miss;
 	VAR Weight Height BMI;
 	TITLE "Descriptive Statistics for Subjects Missing vs. Not Missing Albumin Data";
 	RUN; 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 	
 
 PROC FREQ DATA = project2.missing;
 	TABLES Proced*death30/ missing;
+<<<<<<< Updated upstream
 	*TABLES ASA*death30/ missing;  
+=======
+	TABLES ASA*death30/ missing;  
+>>>>>>> Stashed changes
 	TABLES death30*ALbumin_Miss/ missing; 
 	TABLES Proced*Albumin_miss/ missing;
 	TABLES ASA*Albumin_miss/ missing;
@@ -76,6 +91,7 @@ proc sgpanel data=Project2.Missing;
 		panelby albumin_miss death30;
 		vbarbasic Proced /stat=pct ;
 		title "Distribution of Procedure by Albumin_Missing";
+<<<<<<< Updated upstream
 	run;
 **************************************************************************************************************************;
 DATA Project2.MissAllVars;
@@ -184,3 +200,6 @@ run;
 
 
 
+=======
+	run;
+>>>>>>> Stashed changes

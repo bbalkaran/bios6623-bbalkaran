@@ -8,12 +8,17 @@
 *                                                                                       *
 *   COURSE:     BIOS 6623 - Advanced Data Analysis                                      *
 *   DATA USED:  vadata2.sas7bdat                                                        *
+<<<<<<< Updated upstream
 *   MODIFIED:   DATE  2017-10-31                                                        *
+=======
+*   MODIFIED:   DATE  2017-10-26                                                        *
+>>>>>>> Stashed changes
 *               ----------  --- ------------------------------------------------------- *
 *                                                                                       *
 *                                                                                       *
 *****************************************************************************************
 ***********************************************************************************; RUN;
+<<<<<<< Updated upstream
 Proc Means Data = Project2.clean4 N NMISS MEAN MEDIAN Q1 Q3;
 *where sixmonth = 39;
 VAR BMI_Calc2 Weight_new height albumin;
@@ -26,6 +31,10 @@ RUN;
 
 /*Regression - Primary Adjusted Model*/
 PROC LOGISTIC data = Project2.CLEAN4 ;
+=======
+/*Regression - Primary Adjusted Model*/
+PROC LOGISTIC data = Project2.CLEAN4;
+>>>>>>> Stashed changes
 	class  proced ASA_Cat; 
 	model death30 (event = '1') = proced BMI_Calc2 asa_cat; /* want prob of 1*/
 	output out =Project2.RegOutput1 p= pred_prob;
@@ -36,10 +45,23 @@ PROC LOGISTIC data = Project2.CLEAN4 ;
 PROC MEANS  DATA=Project2.RegOutput1;
 	VAR pred_prob;
 	BY hospcode; 
+<<<<<<< Updated upstream
 	Where sixmonth=39;
 	OUTPUT OUT=Project2.HospProb Mean=; 
 	run;
 
+=======
+	OUTPUT OUT=Project2.HospProb Mean=; 
+	run;
+
+/*Export Adjusted Death Rates by hospital*/ 
+PROC EXPORT DATA = Project2.HospProb
+ OUTFILE = '/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data Analysis/Project_2/HospProb Adjusted Death Rates Primary.csv'
+ DBMS = CSV 
+ REPLACE;  
+ RUN;
+	
+>>>>>>> Stashed changes
 
 **************************************************************************************************;
 /*Regression - Secondary Adjusted Model - with Albumin*/
@@ -54,12 +76,26 @@ PROC LOGISTIC data = Project2.CLEAN4;
 PROC MEANS  DATA=Project2.RegOutput2Alb;
 	VAR pred_prob;
 	BY hospcode; 
+<<<<<<< Updated upstream
 	where sixmonth=39;
 	OUTPUT OUT=Project2.HospProb2Alb Mean=; 
 	run;
 
 ***********************************************************************************************;
 
+=======
+	OUTPUT OUT=Project2.HospProb2Alb Mean=; 
+	run;
+
+/*Export Adjusted Death Rates by hospital - adjusted death rates by hospital*/ 
+PROC EXPORT DATA = Project2.HospProb2Alb
+ OUTFILE = '/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data Analysis/Project_2/HospProb Adjusted Death Rates Secondary with ALbumin.csv'
+ DBMS = CSV 
+ REPLACE;  
+ RUN;
+
+***********************************************************************************************;
+>>>>>>> Stashed changes
 /*Sort by hospcode*/
 PROC SORT DATA = Project2.Clean4;
 By hospcode;
@@ -69,6 +105,7 @@ RUN;
 Proc Means Data=Project2.clean4;
 By HospCode;
 where sixmonth = 39; 
+<<<<<<< Updated upstream
 Var death30 ;
 output out = Project2.obsdeathrt39 mean=;
 RUN; 
@@ -118,5 +155,18 @@ OUTFILE = '/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data Analysis/Pr
 DBMS = CSV 
 REPLACE;  
 RUN;
+=======
+Var death30;
+output out = Project2.obsdeathrt39 mean=;
+RUN; 
+
+/*Export observed death rates by hospital  - ovserved death rates by hospital*/
+PROC EXPORT DATA = Project2.Obsdeathrt39
+OUTFILE = '/home/bridgetbalkaran0/my_courses/BIOS_6623 Advanced Data Analysis/Project_2/Obsdeathrt39.csv'
+DBMS = CSV 
+REPLACE;  
+RUN;
+	
+>>>>>>> Stashed changes
 
  
